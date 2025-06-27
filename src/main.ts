@@ -11,7 +11,7 @@ let transactions: PoolTxn[] = [];
 const yearBlockCount = Math.floor(365 * 24 * 60 * 60 / 2.81);
 
 const poolId = 411756;
-const rangeStart = getRangeStart();
+const rangeStart = getRangeStart(poolId);
 const rangeEnd = Number(status.lastRound);
 
 console.log(
@@ -164,7 +164,7 @@ if (import.meta.main) {
   await snapshot(poolId);
 }
 
-function getRangeStart() {
+function getRangeStart(poolId: number) {
   const dir = Deno.readDirSync("data/");
   let end = 0;
   for (const file of dir) {
@@ -172,6 +172,7 @@ function getRangeStart() {
     if (!file.name.endsWith(".json")) continue;
     const text = Deno.readTextFileSync(`data/${file.name}`);
     const json = JSON.parse(text);
+    if (json.pool !== poolId) continue;
     end = Math.max(end, json.toRound);
   }
   return end + 1;
