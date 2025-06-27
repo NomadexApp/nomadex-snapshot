@@ -1,15 +1,43 @@
+import { Distribution, DistributionData } from "./distribution.ts";
+import { algod } from "./node.ts";
 import { Pool, PoolTxn, Token } from "./type.ts";
+
+const status = await algod.status().do();
 
 let tokens: Token[] = [];
 let pools: Pool[] = [];
 let transactions: PoolTxn[] = [];
 
-const poolId = 429995;
-const rangeStart = 7_000_000;
-const rangeEnd = 7_200_000;
-const reward = 100_000_000_000;
+const yearBlockCount = Math.floor(365 * 24 * 60 * 60 / 2.81);
+
+const poolId = 411756;
+const rangeStart = 8_150_000;
+const rangeEnd = Number(status.lastRound);
+
+console.log(
+  "Processing rewards for",
+  rangeEnd - rangeStart,
+  "rounds of pool",
+  poolId,
+);
+console.log("Round start:", rangeStart);
+console.log("Round end:", rangeEnd);
+
+const aprTarget = 0.2875;
+
+console.log("Target APR:", Number((aprTarget * 100).toFixed(2)));
+
+const reward = 100_000_000;
 const rewardPerRound = BigInt(Math.floor(reward / (rangeEnd - rangeStart)));
-console.log("Reward Per Round:", rewardPerRound);
+console.log(
+  "Duration days approx:",
+  (365 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(2),
+);
+console.log(
+  "Duration Rate:",
+  (aprTarget * 100 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(4),
+  "%",
+);
 
 const rewardsMap: Record<string, bigint> = {};
 
@@ -54,7 +82,7 @@ async function snapshot(poolIndex: number) {
   const beta = tokens.find((t) => t.id === pool.betaId);
   if (!beta) throw Error("beta not found");
   const resp = await fetch(
-    `https://voimain-analytics.nomadex.app/pools/${pool.id}?type=1&type=2`
+    `https://voimain-analytics.nomadex.app/pools/${pool.id}?type=1&type=2`,
   );
   transactions = (await resp.json())
     .sort((a: any, b: any) => a.round - b.round)
@@ -83,13 +111,41 @@ async function snapshot(poolIndex: number) {
   }
 
   const tvl = accumulativeTVL / BigInt(rangeEnd - rangeStart);
-  for (const [addr, value] of Object.entries(rewardsMap).sort(
-    (a, b) => Number(b[1]) - Number(a[1])
-  )) {
+  console.log(
+    "Avg TVL in provided duration:",
+    (Number(tvl) / 1e6).toLocaleString(),
+  );
+  const reward = Number(tvl) * aprTarget * (rangeEnd - rangeStart) /
+    yearBlockCount;
+  console.log("Reward:", (reward / 1e6).toLocaleString());
+
+  const distributionData: DistributionData = {
+    pool: poolId,
+    fromRound: rangeStart,
+    toRound: rangeEnd,
+    tokens: [alpha.symbol, beta.symbol],
+    tvl: tvl.toString(),
+    distrib: [],
+  };
+
+  for (
+    const [addr, value] of Object.entries(rewardsMap).sort(
+      (a, b) => Number(b[1]) - Number(a[1]),
+    )
+  ) {
     if (value === 0n) continue;
-    console.log(addr, Number(value) / 1e6);
+    const userReward = reward * Number(value) / 1e8;
+    console.log(addr, userReward / 1e6, "VOI");
+    distributionData.distrib.push({
+      address: addr,
+      amount: BigInt(Math.floor(userReward)).toString(),
+      tvl: BigInt(Math.floor(Number(tvl) * Number(value) / 1e8)).toString(),
+      txnId: "",
+    });
   }
-  console.log("TVL:", (Number(tvl) / 1e6).toLocaleString());
+
+  const distribution = new Distribution(distributionData);
+  await distribution.process();
 }
 
 if (import.meta.main) {
@@ -105,7 +161,5 @@ if (import.meta.main) {
   });
   const respPools = await fetch("https://voimain-analytics.nomadex.app/pools");
   pools = await respPools.json();
-  const result = await snapshot(poolId);
-
-  console.log("Result:", result);
+  await snapshot(poolId);
 }
