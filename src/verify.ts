@@ -20,6 +20,7 @@ if (import.meta.main) {
         console.log(
           `https://block.voi.network/explorer/transaction/${receipt.transaction.id}`,
         );
+        console.log();
       } catch (_: any) {
         console.log("Confirmation Failed:", txId);
         console.log("File:", `data/${file.name}`);
