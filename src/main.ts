@@ -11,7 +11,7 @@ let transactions: PoolTxn[] = [];
 const yearBlockCount = Math.floor(365 * 24 * 60 * 60 / 2.81);
 
 const poolId = 411756;
-const rangeStart = 8_150_000;
+const rangeStart = getRangeStart();
 const rangeEnd = Number(status.lastRound);
 
 console.log(
@@ -162,4 +162,17 @@ if (import.meta.main) {
   const respPools = await fetch("https://voimain-analytics.nomadex.app/pools");
   pools = await respPools.json();
   await snapshot(poolId);
+}
+
+function getRangeStart() {
+  const dir = Deno.readDirSync("data/");
+  let end = 0;
+  for (const file of dir) {
+    if (!file.isFile) continue;
+    if (!file.name.endsWith(".json")) continue;
+    const text = Deno.readTextFileSync(`data/${file.name}`);
+    const json = JSON.parse(text);
+    end = Math.max(end, json.toRound);
+  }
+  return end + 1;
 }
