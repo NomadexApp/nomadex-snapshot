@@ -1,8 +1,7 @@
 {
   "tasks": {
-    "dev": "deno run -A --watch src/main.ts",
-    "start": "deno run -A src/main.ts",
-    "verify": "deno run -A src/verify.ts"
+    "start": "deno run -A src/main.ts | tee -a main.log",
+    "verify": "deno run -A src/verify.ts | tee -a verify.log"
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
