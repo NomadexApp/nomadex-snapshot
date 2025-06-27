@@ -61,7 +61,12 @@ export class Distribution {
         receiver: distrib.address,
         amount: BigInt(distrib.amount),
         note: new TextEncoder().encode(
-          `Nomadex: liquidity provider reward; pool=${this.distribution.pool}; range: ${this.distribution.fromRound}-${this.distribution.toRound}; `,
+          `Nomadex; Liquidity provider reward ${
+            this.distribution.tokens.join("/")
+          }; ` +
+            `Pool=${this.distribution.pool}; ` +
+            `TVL=${this.distribution.tvl}; ` +
+            `Round: ${this.distribution.fromRound}-${this.distribution.toRound};`,
         ),
       });
       distrib.txnId = txn.txID();
