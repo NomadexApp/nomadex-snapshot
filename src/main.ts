@@ -1,8 +1,6 @@
 import { Distribution, DistributionData } from "./distribution.ts";
-import { algod } from "./node.ts";
+import { getLatestRound } from "./node.ts";
 import { Pool, PoolTxn, Token } from "./type.ts";
-
-const status = await algod.status().do();
 
 let tokens: Token[] = [];
 let pools: Pool[] = [];
@@ -12,7 +10,7 @@ const yearBlockCount = Math.floor(365 * 24 * 60 * 60 / 2.81);
 
 const poolId = 411756;
 const rangeStart = getRangeStart(poolId);
-const rangeEnd = Number(status.lastRound);
+const rangeEnd = await getLatestRound();
 
 console.log(
   "Processing rewards for",
