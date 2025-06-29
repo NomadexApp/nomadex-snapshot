@@ -1,6 +1,7 @@
 {
   "tasks": {
     "start": "deno run -A src/main.ts | tee -a main.log",
+    "start:soft": "deno run -A src/main.ts --soft",
     "verify": "deno run -A src/verify.ts | tee -a verify.log"
   },
   "imports": {

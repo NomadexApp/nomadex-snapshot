@@ -3,6 +3,8 @@ import { algod } from "./node.ts";
 import { account } from "./account.ts";
 import { encodeBase64 } from "jsr:@std/encoding/base64";
 
+const soft = Deno.args.includes("--soft");
+
 export type DistributionData = {
   pool: number;
   tvl: string;
@@ -70,14 +72,15 @@ export class Distribution {
         ),
       });
       distrib.txnId = txn.txID();
-      this.exportFile();
       txnsToSign.push(encodeBase64(txn.toByte()));
     }
-    this.exportFile();
-    this.exportCsv();
-    Deno.writeTextFile(
-      `data/${Math.floor(Date.now() / 1000)}.txns`,
-      txnsToSign.join(","),
-    );
+    if (!soft) {
+      this.exportFile();
+      this.exportCsv();
+      Deno.writeTextFile(
+        `data/${Math.floor(Date.now() / 1000)}.txns`,
+        txnsToSign.join(","),
+      );
+    }
   }
 }
