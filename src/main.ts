@@ -80,15 +80,20 @@ async function snapshot(poolIndex: number) {
   const beta = tokens.find((t) => t.id === pool.betaId);
   if (!beta) throw Error("beta not found");
   const resp = await fetch(
-    `https://voimain-analytics.nomadex.app/pools/${pool.id}?type=1&type=2`,
+    `https://voimain-analytics.nomadex.app/pools/${pool.id}?type=0&type=1&type=2`,
   );
-  transactions = (await resp.json())
+
+  const jsonResponse: PoolTxn[] = await resp.json();
+
+  Deno.writeTextFile("./txns.json", JSON.stringify(jsonResponse, null, 2));
+
+  transactions = jsonResponse
     .sort((a: any, b: any) => a.round - b.round)
     .map((t: PoolTxn) => ({
       ...t,
-      in: t.in.map((x) => BigInt(x)),
-      out: t.out.map((x) => BigInt(x)),
-      tvl: t.tvl.map((x) => BigInt(x)),
+      in: [BigInt(t.in[0]), BigInt(t.in[1]), BigInt(t.in[2])],
+      out: [BigInt(t.out[0]), BigInt(t.out[1]), BigInt(t.out[2])],
+      tvl: [BigInt(t.tvl[0]), BigInt(t.tvl[1])],
     }));
 
   let accumulativeTVL = 0n;
