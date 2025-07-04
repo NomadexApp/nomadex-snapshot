@@ -85,8 +85,6 @@ async function snapshot(poolIndex: number) {
 
   const jsonResponse: PoolTxn[] = await resp.json();
 
-  Deno.writeTextFile("./txns.json", JSON.stringify(jsonResponse, null, 2));
-
   transactions = jsonResponse
     .sort((a: any, b: any) => a.round - b.round)
     .map((t: PoolTxn) => ({
