@@ -12,14 +12,17 @@ const poolId = 411756;
 const rangeStart = getRangeStart(poolId);
 const rangeEnd = await getLatestRound();
 
+console.log();
+console.log("Pool ID:", poolId);
 console.log(
-  "Processing rewards for",
+  "Round range:",
+  rangeStart,
+  "-",
+  rangeEnd,
+  `(`,
   rangeEnd - rangeStart,
-  "rounds of pool",
-  poolId,
+  `rounds )`,
 );
-console.log("Round start:", rangeStart);
-console.log("Round end:", rangeEnd);
 
 const aprTarget = 0.2875;
 
@@ -28,13 +31,14 @@ console.log("Target APR:", Number((aprTarget * 100).toFixed(2)));
 const reward = 100_000_000;
 const rewardPerRound = BigInt(Math.floor(reward / (rangeEnd - rangeStart)));
 console.log(
-  "Duration days approx:",
-  (365 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(2),
+  "Duration in days:",
+  Number((365 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(2)),
 );
 console.log(
-  "Duration Rate:",
-  (aprTarget * 100 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(4),
-  "%",
+  "%:",
+  Number(
+    (aprTarget * 100 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(4),
+  ),
 );
 
 const rewardsMap: Record<string, bigint> = {};
@@ -113,12 +117,13 @@ async function snapshot(poolIndex: number) {
 
   const tvl = accumulativeTVL / BigInt(rangeEnd - rangeStart);
   console.log(
-    "Avg TVL in provided duration:",
-    (Number(tvl) / 1e6).toLocaleString(),
+    "Avg TVL:",
+    Number((Number(tvl) / 1e6).toFixed(3)),
   );
   const reward = Number(tvl) * aprTarget * (rangeEnd - rangeStart) /
     yearBlockCount;
-  console.log("Reward:", (reward / 1e6).toLocaleString());
+  console.log("Reward:", Number((reward / 1e6).toFixed(3)));
+  console.log();
 
   const distributionData: DistributionData = {
     pool: poolId,
@@ -136,7 +141,7 @@ async function snapshot(poolIndex: number) {
   ) {
     if (value === 0n) continue;
     const userReward = reward * Number(value) / 1e8;
-    console.log(addr, userReward / 1e6, "VOI");
+    console.log(addr, Number((userReward / 1e6).toFixed(3)), "VOI");
     distributionData.distrib.push({
       address: addr,
       amount: BigInt(Math.floor(userReward)).toString(),
@@ -147,6 +152,9 @@ async function snapshot(poolIndex: number) {
 
   const distribution = new Distribution(distributionData);
   await distribution.process();
+  console.log();
+  console.log("==============================================");
+  console.log();
 }
 
 if (import.meta.main) {
