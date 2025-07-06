@@ -17,11 +17,11 @@ if (import.meta.main) {
     for (const txId of json.distrib.map((d: any) => d.txnId)) {
       try {
         const receipt = await indexer.lookupTransactionByID(txId).do();
-        console.log("Exists:", receipt.transaction.id);
         console.log(
-          `https://block.voi.network/explorer/transaction/${receipt.transaction.id}`,
+          "Exists:",
+          receipt.transaction.id,
+          receipt.transaction.confirmedRound?.toString(),
         );
-        console.log();
       } catch (_: any) {
         console.log("Confirmation Failed:", txId);
         console.log("File:", `data/${file.name}`);
