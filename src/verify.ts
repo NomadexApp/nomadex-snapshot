@@ -3,7 +3,6 @@ import { indexer } from "./node.ts";
 const poolId = 411756;
 
 if (import.meta.main) {
-  console.log();
   const dir = Array.from(Deno.readDirSync("data/")).filter((d) =>
     d.name.endsWith(".json")
   ).sort((a, b) => b.name < a.name ? 1 : -1);
