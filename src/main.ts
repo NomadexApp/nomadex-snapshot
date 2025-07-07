@@ -1,188 +1,441 @@
-import { Distribution, DistributionData } from "./distribution.ts";
-import { getLatestRound } from "./node.ts";
+import algosdk from "algosdk";
+import { encodeBase64 } from "jsr:@std/encoding";
+import { algod, getLatestRound, indexer } from "./node.ts";
 import { Pool, PoolTxn, Token } from "./type.ts";
+import { account } from "./account.ts";
 
-let tokens: Token[] = [];
-let pools: Pool[] = [];
-let transactions: PoolTxn[] = [];
+type PoolRecord = {
+  pool: number;
+  apr: number;
+  distributions: {
+    fromRound: number;
+    toRound: number;
+    tvl: string;
+    reward: string;
+    payouts: {
+      address: string;
+      amount: string;
+      tvl: string;
+      txnId: string;
+      verified: boolean;
+    }[];
+  }[];
+};
 
-const yearBlockCount = Math.floor(365 * 24 * 60 * 60 / 2.81);
+class RewardDistribution {
+  public fromRound = 8150000;
+  public readonly pools: PoolRecord[] = [];
 
-const poolId = 411756;
-const rangeStart = getRangeStart(poolId);
-const rangeEnd = await getLatestRound();
+  private readonly baseApiEndpoint = "https://voimain-analytics.nomadex.app";
 
-console.log();
-console.log("Pool ID:", poolId);
-console.log(
-  "Round range:",
-  rangeStart,
-  "-",
-  rangeEnd,
-  `(`,
-  rangeEnd - rangeStart,
-  `rounds )`,
-);
+  constructor(fromRound: number) {
+    this.fromRound = fromRound;
+  }
 
-const aprTarget = 0.2875;
-
-console.log("Target APR:", Number((aprTarget * 100).toFixed(2)));
-
-const reward = 100_000_000;
-const rewardPerRound = BigInt(Math.floor(reward / (rangeEnd - rangeStart)));
-console.log(
-  "Duration in days:",
-  Number((365 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(2)),
-);
-console.log(
-  "%:",
-  Number(
-    (aprTarget * 100 * (rangeEnd - rangeStart) / yearBlockCount).toFixed(4),
-  ),
-);
-
-const rewardsMap: Record<string, bigint> = {};
-
-function getBalancesAtRound(round: number) {
-  const balances: Record<string, bigint> = {};
-
-  for (const event of transactions) {
-    if (event.round > round) break;
-    const user = event.sender;
-    if (event.type === 1) {
-      if (typeof balances[user] !== "bigint") {
-        balances[user] = 0n;
+  static fromJSON(
+    json: { fromRound: number; pools: PoolRecord[] },
+  ): RewardDistribution {
+    const distribution = new RewardDistribution(json.fromRound);
+    for (const pool of json.pools) {
+      distribution.addPool(pool.pool, pool.apr);
+      for (const dist of pool.distributions) {
+        distribution.addDistribution(
+          pool.pool,
+          dist.fromRound,
+          dist.toRound,
+          BigInt(dist.tvl),
+          BigInt(dist.reward),
+          dist.payouts.map((p) => ({
+            address: p.address,
+            amount: BigInt(p.amount),
+            tvl: BigInt(p.tvl),
+            txnId: p.txnId,
+            verified: p.verified,
+          })),
+        );
       }
-      balances[user] += event.out[2];
-    } else if (event.type === 2) {
-      if (typeof balances[user] !== "bigint") {
-        throw Error("lp removed for non-user");
+    }
+    return distribution;
+  }
+
+  getPoolIds(): number[] {
+    return this.pools.map((p) => p.pool);
+  }
+
+  getPool(poolId: number): PoolRecord | undefined {
+    return this.pools.find((p) => p.pool === poolId);
+  }
+
+  poolExists(poolId: number): boolean {
+    return this.pools.some((p) => p.pool === poolId);
+  }
+
+  isPoolDistributionVerified(poolId: number): boolean {
+    const pool = this.getPool(poolId);
+    if (!pool) return false;
+    return pool.distributions.every((d) => d.payouts.every((p) => p.verified));
+  }
+
+  isVerified(): boolean {
+    return this.pools.every((pool) =>
+      pool.distributions.every((d) => d.payouts.every((p) => p.verified))
+    );
+  }
+
+  getLastRound(poolId: number): number {
+    const pool = this.getPool(poolId);
+    if (!pool) throw Error("pool not found");
+    return pool.distributions.reduce(
+      (last, d) => Math.max(last, d.toRound),
+      this.fromRound - 1,
+    );
+  }
+
+  getNextRound(poolId: number): number {
+    return this.getLastRound(poolId) + 1;
+  }
+
+  addPool(poolId: number, aprTarget: number) {
+    if (!this.pools.some((p) => p.pool === poolId)) {
+      if (aprTarget < 0 || aprTarget > 1) {
+        throw new Error(`APR must be between 0 and 1, got ${aprTarget}`);
       }
-      balances[user] -= event.in[2];
+      this.pools.push({ pool: poolId, apr: aprTarget, distributions: [] });
     }
   }
-  return balances;
-}
 
-function getTVLAtRound(round: number) {
-  let tvl = 0n;
-
-  for (const event of transactions) {
-    if (event.round > round) break;
-    tvl = event.tvl[0] * 2n;
-    if (event.tvl[0] === 0n) tvl = 0n;
-    if (event.tvl[1] === 0n) tvl = 0n;
+  addDistribution(
+    poolId: number,
+    fromRound: number,
+    toRound: number,
+    tvl: bigint,
+    reward: bigint,
+    payouts: {
+      address: string;
+      amount: bigint;
+      tvl: bigint;
+      txnId: string;
+      verified: boolean;
+    }[],
+  ) {
+    const pool = this.pools.find((p) => p.pool === poolId);
+    if (!pool) throw new Error(`Pool ${poolId} not found`);
+    pool.distributions.push({
+      fromRound,
+      toRound,
+      tvl: tvl.toString(),
+      reward: reward.toString(),
+      payouts: payouts.map((p) => ({
+        ...p,
+        amount: p.amount.toString(),
+        tvl: p.tvl.toString(),
+      })),
+    });
   }
-  return tvl;
-}
 
-async function snapshot(poolIndex: number) {
-  const pool = pools.find((p) => p.id === poolIndex);
-  if (!pool) throw Error("pool not found");
-  const alpha = tokens.find((t) => t.id === pool.alphaId);
-  if (!alpha) throw Error("alpha not found");
-  const beta = tokens.find((t) => t.id === pool.betaId);
-  if (!beta) throw Error("beta not found");
-  const resp = await fetch(
-    `https://voimain-analytics.nomadex.app/pools/${pool.id}?type=0&type=1&type=2`,
-  );
+  toJSON(): { fromRound: number; pools: PoolRecord[] } {
+    return {
+      fromRound: this.fromRound,
+      pools: this.pools.map((pool) => ({
+        pool: pool.pool,
+        apr: pool.apr,
+        distributions: pool.distributions.map((d) => ({
+          fromRound: d.fromRound,
+          toRound: d.toRound,
+          tvl: d.tvl,
+          reward: d.reward,
+          payouts: d.payouts.map((p) => ({
+            address: p.address,
+            amount: p.amount,
+            tvl: p.tvl,
+            txnId: p.txnId,
+            verified: p.verified,
+          })),
+        })),
+      })),
+    };
+  }
 
-  const jsonResponse: PoolTxn[] = await resp.json();
+  toString(): string {
+    return JSON.stringify(this.toJSON(), null, 2);
+  }
 
-  transactions = jsonResponse
-    .sort((a: any, b: any) => a.round - b.round)
-    .map((t: PoolTxn) => ({
+  async getNomadexTokens(): Promise<Token[]> {
+    const resp = await fetch(`${this.baseApiEndpoint}/tokens`);
+    const tokens: Token[] = await resp.json();
+    tokens.unshift({
+      id: 0,
+      type: 0,
+      decimals: 6,
+      name: "VOI",
+      symbol: "VOI",
+      total: 10_000_000_000_000000n,
+    });
+    return tokens.map((t) => ({ ...t, total: BigInt(t.total) }));
+  }
+
+  async getNomadexPools(): Promise<Pool[]> {
+    const respPools = await fetch(`${this.baseApiEndpoint}/pools`);
+    const pools: Pool[] = await respPools.json();
+    return pools;
+  }
+
+  async getNomadexPoolEvents(poolId: number): Promise<PoolTxn[]> {
+    const resp = await fetch(
+      `https://voimain-analytics.nomadex.app/pools/${poolId}?type=0&type=1&type=2`,
+    );
+
+    let events: PoolTxn[] = await resp.json();
+    events = events.toSorted((a, b) => a.round - b.round);
+    events = events.map((t: PoolTxn) => ({
       ...t,
       in: [BigInt(t.in[0]), BigInt(t.in[1]), BigInt(t.in[2])],
       out: [BigInt(t.out[0]), BigInt(t.out[1]), BigInt(t.out[2])],
       tvl: [BigInt(t.tvl[0]), BigInt(t.tvl[1])],
     }));
 
-  let accumulativeTVL = 0n;
+    return events;
+  }
 
-  for (let round = rangeStart; round <= rangeEnd; round++) {
-    const balances = getBalancesAtRound(round);
-    const total = Object.values(balances).reduce((acc, a) => acc + a, 0n);
+  static getBalancesAtRound(round: number, events: PoolTxn[]) {
+    const balances: Record<string, bigint> = {};
 
-    for (const addr in balances) {
-      if (typeof rewardsMap[addr] !== "bigint") {
-        rewardsMap[addr] = 0n;
+    for (const event of events) {
+      if (event.round > round) break;
+      const user = event.sender;
+      if (event.type === 1) {
+        if (typeof balances[user] !== "bigint") {
+          balances[user] = 0n;
+        }
+        balances[user] += event.out[2];
+      } else if (event.type === 2) {
+        if (typeof balances[user] !== "bigint") {
+          throw Error("lp removed for non-user");
+        }
+        balances[user] -= event.in[2];
       }
-      const balance = balances[addr];
-      rewardsMap[addr] += (rewardPerRound * balance) / total;
+    }
+    return balances;
+  }
+
+  static getTVLAtRound(round: number, events: PoolTxn[]) {
+    let tvl = 0n;
+
+    for (const event of events) {
+      if (event.round > round) break;
+      tvl = event.tvl[0] * 2n;
+      if (event.tvl[0] === 0n) tvl = 0n;
+      if (event.tvl[1] === 0n) tvl = 0n;
+    }
+    return tvl;
+  }
+
+  async verifyDistributions() {
+    for (const poolId of this.getPoolIds()) {
+      const pool = this.getPool(poolId)!;
+      for (const distribution of pool.distributions) {
+        for (const payout of distribution.payouts) {
+          if (payout.verified) continue;
+          try {
+            if (!payout.txnId) throw Error("verification failed");
+            const receipt = await indexer.lookupTransactionByID(payout.txnId)
+              .do();
+            if (receipt.transaction.id !== payout.txnId) {
+              throw Error("txn id mismatch");
+            }
+            payout.verified = true;
+            console.log(
+              "Exists:",
+              receipt.transaction.id,
+              receipt.transaction.confirmedRound?.toString(),
+            );
+          } catch (_: any) {
+            console.log("Confirmation Failed:", payout.txnId);
+            console.log("Pool:", poolId);
+            console.log(
+              "Rounds:",
+              distribution.fromRound,
+              "-",
+              distribution.toRound,
+            );
+            Deno.exit(1);
+          }
+        }
+      }
+    }
+  }
+
+  async buildPayouts() {
+    const payouts:
+      (PoolRecord["distributions"][0]["payouts"][0] & { txn: string })[] = [];
+    const suggestedParams = await algod.getTransactionParams().do();
+
+    for (const poolId of this.getPoolIds()) {
+      const pool = this.getPool(poolId)!;
+      for (const distribution of pool.distributions) {
+        for (const payout of distribution.payouts) {
+          if (payout.verified) continue;
+          if (payout.txnId) continue;
+          try {
+            const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+              suggestedParams: suggestedParams,
+              sender: account.addr,
+              receiver: payout.address,
+              amount: BigInt(payout.amount),
+              note: new TextEncoder().encode(
+                `Nomadex; Liquidity provider reward; ` +
+                  `Pool=${poolId}; ` +
+                  `TVL=${distribution.tvl}; ` +
+                  `Round: ${distribution.fromRound}-${distribution.toRound};`,
+              ),
+            });
+            payout.txnId = txn.txID();
+            payouts.push({ ...payout, txn: encodeBase64(txn.toByte()) });
+          } catch (_: any) {
+            console.log("Confirmation Failed:", payout.txnId);
+            console.log("Pool:", poolId);
+            console.log(
+              "Rounds:",
+              distribution.fromRound,
+              "-",
+              distribution.toRound,
+            );
+            Deno.exit(1);
+          }
+        }
+      }
+    }
+    return payouts;
+  }
+
+  async buildNextDistribution(
+    poolId: number,
+  ) {
+    const fromRound = this.getNextRound(poolId);
+    const toRound = await getLatestRound();
+    const roundCount = toRound - fromRound + 1;
+    const pool = this.getPool(poolId)!;
+    const events = await this.getNomadexPoolEvents(poolId);
+
+    let accumulativeTVL = 0n;
+    const rewardsMap: Record<string, bigint> = {};
+    const rewardShare = 100_000_000;
+    const rewardPerRound = BigInt(Math.floor(rewardShare / roundCount));
+
+    for (let round = fromRound; round <= toRound; round++) {
+      const balances = RewardDistribution.getBalancesAtRound(round, events);
+      const total = Object.values(balances).reduce((acc, a) => acc + a, 0n);
+      accumulativeTVL += RewardDistribution.getTVLAtRound(round, events);
+      if (total === 0n) continue;
+
+      for (const addr in balances) {
+        if (typeof rewardsMap[addr] !== "bigint") {
+          rewardsMap[addr] = 0n;
+        }
+        const balance = balances[addr];
+        rewardsMap[addr] += (rewardPerRound * balance) / total;
+      }
     }
 
-    accumulativeTVL += getTVLAtRound(round);
+    const tvl = accumulativeTVL / BigInt(roundCount);
+    const reward = Math.floor(
+      Number(tvl) * pool.apr * roundCount /
+        Math.floor(365 * 24 * 60 * 60 / 2.81),
+    );
+
+    const payouts: {
+      address: string;
+      amount: bigint;
+      tvl: bigint;
+      txnId: string;
+      verified: boolean;
+    }[] = [];
+
+    for (
+      const [addr, value] of Object.entries(rewardsMap).sort(
+        (a, b) => Number(b[1]) - Number(a[1]),
+      )
+    ) {
+      if (value === 0n) continue;
+      const userReward = reward * Number(value) / 1e8;
+      payouts.push({
+        address: addr,
+        amount: BigInt(Math.floor(userReward)),
+        tvl: BigInt(Math.floor(Number(tvl) * Number(value) / 1e8)),
+        txnId: "",
+        verified: false,
+      });
+    }
+
+    return {
+      fromRound,
+      toRound,
+      tvl: tvl,
+      reward: BigInt(reward),
+      payouts: payouts,
+    };
   }
-
-  const tvl = accumulativeTVL / BigInt(rangeEnd - rangeStart);
-  console.log(
-    "Avg TVL:",
-    Number((Number(tvl) / 1e6).toFixed(3)),
-  );
-  const reward = Number(tvl) * aprTarget * (rangeEnd - rangeStart) /
-    yearBlockCount;
-  console.log("Reward:", Number((reward / 1e6).toFixed(3)));
-  console.log();
-
-  const distributionData: DistributionData = {
-    pool: poolId,
-    fromRound: rangeStart,
-    toRound: rangeEnd,
-    tokens: [alpha.symbol, beta.symbol],
-    tvl: tvl.toString(),
-    distrib: [],
-  };
-
-  for (
-    const [addr, value] of Object.entries(rewardsMap).sort(
-      (a, b) => Number(b[1]) - Number(a[1]),
-    )
-  ) {
-    if (value === 0n) continue;
-    const userReward = reward * Number(value) / 1e8;
-    console.log(addr, Number((userReward / 1e6).toFixed(3)), "VOI");
-    distributionData.distrib.push({
-      address: addr,
-      amount: BigInt(Math.floor(userReward)).toString(),
-      tvl: BigInt(Math.floor(Number(tvl) * Number(value) / 1e8)).toString(),
-      txnId: "",
-    });
-  }
-
-  const distribution = new Distribution(distributionData);
-  await distribution.process();
-  console.log();
-  console.log("==============================================");
-  console.log();
 }
+
+const knownPools = [
+  {
+    poolId: 411756,
+    apr: 0.2875,
+  },
+  {
+    poolId: 40176866,
+    apr: 0.14375,
+  },
+  {
+    poolId: 40176894,
+    apr: 0.14375,
+  },
+  {
+    poolId: 40215993,
+    apr: 0.14375,
+  },
+  {
+    poolId: 411789,
+    apr: 0.14375,
+  },
+];
 
 if (import.meta.main) {
-  const resp = await fetch("https://voimain-analytics.nomadex.app/tokens");
-  tokens = await resp.json();
-  tokens.unshift({
-    id: 0,
-    type: 0,
-    decimals: 6,
-    name: "VOI",
-    symbol: "VOI",
-    total: 10_000_000_000_000000n,
-  });
-  const respPools = await fetch("https://voimain-analytics.nomadex.app/pools");
-  pools = await respPools.json();
-  await snapshot(poolId);
-}
-
-function getRangeStart(poolId: number) {
-  const dir = Deno.readDirSync("data/");
-  let end = 0;
-  for (const file of dir) {
-    if (!file.isFile) continue;
-    if (!file.name.endsWith(".json")) continue;
-    const text = Deno.readTextFileSync(`data/${file.name}`);
-    const json = JSON.parse(text);
-    if (json.pool !== poolId) continue;
-    end = Math.max(end, json.toRound);
+  let distribution: RewardDistribution;
+  try {
+    const content = Deno.readTextFileSync("./data/data.json");
+    const json = JSON.parse(content);
+    distribution = RewardDistribution.fromJSON(json);
+  } catch (e) {
+    throw Error("failed to load json file");
   }
-  return end + 1;
+
+  // validate
+  for (const knownPool of knownPools) {
+    distribution.addPool(knownPool.poolId, knownPool.apr);
+  }
+
+  await distribution.verifyDistributions();
+
+  for (const poolId of distribution.getPoolIds()) {
+    const data = await distribution.buildNextDistribution(poolId);
+    const { fromRound, toRound, tvl, reward, payouts } = data;
+    distribution.addDistribution(
+      poolId,
+      fromRound,
+      toRound,
+      tvl,
+      reward,
+      payouts,
+    );
+  }
+
+  const soft = Deno.args.includes("--soft");
+
+  const payouts = await distribution.buildPayouts();
+  console.log(payouts);
+
+  if (!soft) {
+    Deno.writeTextFileSync("./data/data.json", distribution.toString());
+  }
 }
