@@ -3,6 +3,7 @@ import { encodeBase64 } from "jsr:@std/encoding";
 import { algod, getLatestRound, indexer } from "./node.ts";
 import { Pool, PoolTxn, Token } from "./type.ts";
 import { account } from "./account.ts";
+import { copy } from "https://deno.land/x/clipboard@v0.0.3/mod.ts";
 
 type PoolRecord = {
   pool: number;
@@ -432,10 +433,11 @@ if (import.meta.main) {
 
   const soft = Deno.args.includes("--soft");
 
-  const payouts = await distribution.buildPayouts();
-  console.log(payouts);
-
   if (!soft) {
+    const payouts = await distribution.buildPayouts();
+    const txnsBase64 = payouts.map((p) => p.txn).join(",");
+    Deno.writeTextFileSync("./data/txn.txt", txnsBase64);
     Deno.writeTextFileSync("./data/data.json", distribution.toString());
+    copy(txnsBase64);
   }
 }
