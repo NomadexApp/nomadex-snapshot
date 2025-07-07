@@ -404,7 +404,7 @@ if (import.meta.main) {
     const content = Deno.readTextFileSync("./data/data.json");
     const json = JSON.parse(content);
     distribution = RewardDistribution.fromJSON(json);
-  } catch (e) {
+  } catch (_) {
     throw Error("failed to load json file");
   }
 
