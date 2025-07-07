@@ -2,6 +2,7 @@ import algosdk from "algosdk";
 import { algod } from "./node.ts";
 import { account } from "./account.ts";
 import { encodeBase64 } from "jsr:@std/encoding/base64";
+import { copy } from "https://deno.land/x/clipboard/mod.ts";
 
 const soft = Deno.args.includes("--soft");
 
@@ -77,9 +78,11 @@ export class Distribution {
     if (!soft) {
       this.exportFile();
       this.exportCsv();
+      const base64Txns = txnsToSign.join(",");
+      copy(base64Txns);
       Deno.writeTextFile(
         `data/${Math.floor(Date.now() / 1000)}.txns`,
-        txnsToSign.join(","),
+        base64Txns,
       );
     }
   }
