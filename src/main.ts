@@ -309,11 +309,8 @@ class RewardDistribution {
     return payouts;
   }
 
-  async buildNextDistribution(
-    poolId: number,
-  ) {
+  async buildNextDistribution(poolId: number, toRound: number) {
     const fromRound = this.getNextRound(poolId);
-    const toRound = await getLatestRound();
     const roundCount = toRound - fromRound + 1;
     const pool = this.getPool(poolId)!;
     const events = await this.getNomadexPoolEvents(poolId);
@@ -417,9 +414,10 @@ if (import.meta.main) {
   }
 
   await distribution.verifyDistributions();
+  const latestRound = await getLatestRound();
 
   for (const poolId of distribution.getPoolIds()) {
-    const data = await distribution.buildNextDistribution(poolId);
+    const data = await distribution.buildNextDistribution(poolId, latestRound);
     const { fromRound, toRound, tvl, reward, payouts } = data;
     distribution.addDistribution(
       poolId,
@@ -429,6 +427,22 @@ if (import.meta.main) {
       reward,
       payouts,
     );
+
+    console.log();
+    console.log(`Pool:  `, poolId.toString());
+    console.log(`Range: `, `${fromRound}-${toRound}`);
+    console.log(`TVL:   `, (Number(tvl) / 1e6).toLocaleString());
+    console.log(`Reward:`, (Number(reward) / 1e6).toLocaleString());
+    console.log();
+    for (const payout of payouts) {
+      console.log(
+        payout.address,
+        (Number(payout.amount) / 1e6).toLocaleString().padStart(12, " "),
+        "VOI   |  ",
+        (Number(payout.tvl) / 1e6).toLocaleString(),
+        "VOI",
+      );
+    }
   }
 
   const soft = Deno.args.includes("--soft");
@@ -436,8 +450,8 @@ if (import.meta.main) {
   if (!soft) {
     const payouts = await distribution.buildPayouts();
     const txnsBase64 = payouts.map((p) => p.txn).join(",");
-    Deno.writeTextFileSync("./data/txn.txt", txnsBase64);
+    Deno.writeTextFileSync("./data/txns.txt", txnsBase64);
     Deno.writeTextFileSync("./data/data.json", distribution.toString());
-    copy(txnsBase64);
+    await copy(txnsBase64);
   }
 }
