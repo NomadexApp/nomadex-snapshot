@@ -1168,27 +1168,70 @@
               "amount": "9130434385",
               "tvl": "24497440018103",
               "txnId": "3CGHQXTHZY2XCRYOEYNZB4DS5FCAYB6OJOJVTQJMOPIKZJW56J4A",
-              "verified": false
+              "verified": true
             },
             {
               "address": "BUD2763FMK6EYVKGHWWUN4QKHPSPCVFUEPPI4PQCPGYVPGQ6GNKBX6IXCQ",
               "amount": "322420036",
               "tvl": "865070068458",
               "txnId": "EVA732PKAFX6724JU3R7FXAEL7KNL5H3NS7NWVYGU2MGVFGS4TDA",
-              "verified": false
+              "verified": true
             },
             {
               "address": "KRGQTWOEDRJ7476DIORQDSLUZMJLHPQ2KKGAZTNGQ6KWPI2UT3KD42EX64",
               "amount": "9644363",
               "tvl": "25876340271",
               "txnId": "WIRVWDOWBE7S7DVGUKRNSPZE6QXQXC4QQM7UB532RF7VJY54IY7Q",
-              "verified": false
+              "verified": true
             },
             {
               "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
               "amount": "4133298",
               "tvl": "11089860116",
               "txnId": "PPS2MAGCNQBPTSYOXS6BREDDHOFVVDSU7IUOMXPQMSZW6YKIDLXA",
+              "verified": true
+            }
+          ]
+        },
+        {
+          "fromRound": 9471617,
+          "toRound": 9489422,
+          "tvl": "25380234431693",
+          "reward": "11577094845",
+          "payouts": [
+            {
+              "address": "DYX2V5XF4IKOHE55Z63XAHVBJTMYM723HK5WJZ72BDZ5AFEFKJ5YP4DOQQ",
+              "amount": "11160421077",
+              "tvl": "24466768830610",
+              "txnId": "SMFXXST5WO76RY6V45ZSOEW5RDZZSRYGQTH7VJQNBJNYLLDKBKBQ",
+              "verified": false
+            },
+            {
+              "address": "BUD2763FMK6EYVKGHWWUN4QKHPSPCVFUEPPI4PQCPGYVPGQ6GNKBX6IXCQ",
+              "amount": "393730744",
+              "tvl": "863168067695",
+              "txnId": "GH2DMOOYV3Z5ASFMCQGPM4JQEQVHWNY74NZSS7CGMLIV4VJPJFFQ",
+              "verified": false
+            },
+            {
+              "address": "KRGQTWOEDRJ7476DIORQDSLUZMJLHPQ2KKGAZTNGQ6KWPI2UT3KD42EX64",
+              "amount": "12368505",
+              "tvl": "27115227257",
+              "txnId": "TH36UC4LVGF67KIAUL56O3CRNBCPPE7X4RVZTEETICA2MIMPBIWA",
+              "verified": false
+            },
+            {
+              "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
+              "amount": "4122835",
+              "tvl": "9038409085",
+              "txnId": "EEFFLZZPC6BQ4AZ2IHU3HYPNZSHZLYDVMUSAZX732SIYPFU2FPZQ",
+              "verified": false
+            },
+            {
+              "address": "OIQZNKVVPXJQFD5FNOZJFR6T444LW42UADDBFAKESNGIMV2RK3PFRJXJYU",
+              "amount": "1058146",
+              "tvl": "2319753427",
+              "txnId": "O7OXN7PFM747SNXFBOGV6PQE4CFOGATASYBCROL2F5A3H5FVZI7A",
               "verified": false
             }
           ]
@@ -1630,6 +1673,21 @@
               "amount": "23561722",
               "tvl": "126434706406",
               "txnId": "NAXZLFCHDQIVDO6GGY7PZRU4HG2A4J7F6RIZMD26VGSQQO2OTM6A",
+              "verified": true
+            }
+          ]
+        },
+        {
+          "fromRound": 9471617,
+          "toRound": 9489422,
+          "tvl": "126440678200",
+          "reward": "28837710",
+          "payouts": [
+            {
+              "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
+              "amount": "28837276",
+              "tvl": "126438776532",
+              "txnId": "NLM2UJT37O2KNR5SA2ETRGLUEN5BB2CSFQDTL7EEKHXKWZ4FGMYQ",
               "verified": false
             }
           ]
@@ -2295,20 +2353,49 @@
               "amount": "8096799",
               "tvl": "43448284230",
               "txnId": "M6TW5VYNYVHA2K4Q5GACUQS47HX2PTQ6MWZFSQZX3D7JLO73WE3A",
-              "verified": false
+              "verified": true
             },
             {
               "address": "TNBABD63I7N4RJ5DYEY7XPWDOO3FERJZUVGE3VKB2PADKOHDKPJVXSJWPM",
               "amount": "7510449",
               "tvl": "40301869610",
               "txnId": "EXHZXSJUUC2CS2G2IMP2G3WVTRBM2YUDGT6PTLAKMGSSMAP7NFLQ",
-              "verified": false
+              "verified": true
             },
             {
               "address": "HSKPPQFJF2P6PH3M2BYEDQ6XJKRLRE3HZ5AOS2TM5YLSUH7SIYVN5FNG4A",
               "amount": "4144687",
               "tvl": "22240832751",
               "txnId": "IL6EZFQYFB5KWQYOB7U7GELMRYBQ266DB6SP6NVMUO5JHHSPZ3AA",
+              "verified": true
+            }
+          ]
+        },
+        {
+          "fromRound": 9471617,
+          "toRound": 9489422,
+          "tvl": "106011417112",
+          "reward": "24178347",
+          "payouts": [
+            {
+              "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
+              "amount": "9910562",
+              "tvl": "43453456527",
+              "txnId": "3U7YGUFLICTTQJZYRVKPD3RK34FKNDBIDTRB6N6D2MPS4D7ZIQVA",
+              "verified": false
+            },
+            {
+              "address": "TNBABD63I7N4RJ5DYEY7XPWDOO3FERJZUVGE3VKB2PADKOHDKPJVXSJWPM",
+              "amount": "9191594",
+              "tvl": "40301098907",
+              "txnId": "47XNU65RIOWHP5KJOJLAR5BGTOJASFIQFKOYJSGZNBV7S4U6NC7Q",
+              "verified": false
+            },
+            {
+              "address": "HSKPPQFJF2P6PH3M2BYEDQ6XJKRLRE3HZ5AOS2TM5YLSUH7SIYVN5FNG4A",
+              "amount": "5071521",
+              "tvl": "22236390872",
+              "txnId": "BEJEMCUCM4Y37PEOP5AZYSJYZAXLWG65OUBFXCVNWUYYDMEMLDMQ",
               "verified": false
             }
           ]
@@ -2645,6 +2732,21 @@
               "amount": "15115274",
               "tvl": "81110166453",
               "txnId": "KTBMWJJ7ISZP6TSDLBKTLAXNSIMLKZTRA5M7XVG45XSEMXTPMMMQ",
+              "verified": true
+            }
+          ]
+        },
+        {
+          "fromRound": 9471617,
+          "toRound": 9489422,
+          "tvl": "81113997468",
+          "reward": "18499916",
+          "payouts": [
+            {
+              "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
+              "amount": "18499637",
+              "tvl": "81112777513",
+              "txnId": "CEYRW54AARVWDIMCYCZU77IYD6ZYMXU4PD757T6F6NXH653GNPDQ",
               "verified": false
             }
           ]
@@ -3100,6 +3202,21 @@
               "amount": "7073656",
               "tvl": "37957995693",
               "txnId": "MI2HSE6MGY4OZTBC3ROFOW4ZXVSVCRX45QRLZ5ZZ4JKF6CEX72UQ",
+              "verified": true
+            }
+          ]
+        },
+        {
+          "fromRound": 9471617,
+          "toRound": 9489422,
+          "tvl": "37959788534",
+          "reward": "8657604",
+          "payouts": [
+            {
+              "address": "VOIUK3B5KQXVMVMYMLZOELHNABRKV27BP3CZRIK2ZCF7HEFP4F6APX76NM",
+              "amount": "8657473",
+              "tvl": "37959217618",
+              "txnId": "Z3NB7KICVVYQLEUSUJZYICRS4QKRTXXQ5AQGHHA3KQ6F26PDWJZA",
               "verified": false
             }
           ]
