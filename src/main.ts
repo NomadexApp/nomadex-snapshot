@@ -317,7 +317,7 @@ class RewardDistribution {
 
     let accumulativeTVL = 0n;
     const rewardsMap: Record<string, bigint> = {};
-    const rewardShare = 100_000_000;
+    const rewardShare = 100_000_000_000;
     const rewardPerRound = BigInt(Math.floor(rewardShare / roundCount));
 
     for (let round = fromRound; round <= toRound; round++) {
@@ -355,11 +355,11 @@ class RewardDistribution {
       )
     ) {
       if (value === 0n) continue;
-      const userReward = reward * Number(value) / 1e8;
+      const userReward = (Number(value) * reward) / rewardShare;
       payouts.push({
         address: addr,
         amount: BigInt(Math.floor(userReward)),
-        tvl: BigInt(Math.floor(Number(tvl) * Number(value) / 1e8)),
+        tvl: BigInt(Math.floor(Number(tvl) * Number(value) / rewardShare)),
         txnId: "",
         verified: false,
       });
