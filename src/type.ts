@@ -24,6 +24,7 @@ export type PoolTxn = {
   id: string;
   pool: number;
   sender: string;
+  receiver: string;
   round: number;
   timestamp: number;
   type: number;
