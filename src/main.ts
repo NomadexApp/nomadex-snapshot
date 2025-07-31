@@ -438,7 +438,7 @@ if (import.meta.main) {
 
     console.log();
     console.log(`Pool:  `, poolId.toString());
-    console.log(`Range: `, `${fromRound}-${toRound}`);
+    console.log(`Round: `, `${fromRound}-${toRound}    (${toRound - fromRound})`);
     console.log(`TVL:   `, (Number(tvl) / 1e6).toLocaleString());
     console.log(`Reward:`, (Number(reward) / 1e6).toLocaleString());
     console.log();
