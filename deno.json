@@ -6,7 +6,8 @@
   },
   "imports": {
     "@std/assert": "jsr:@std/assert@1",
-    "algosdk": "npm:algosdk@^3.3.1"
+    "algosdk": "npm:algosdk@^3.3.1",
+    "clipboardy": "npm:clipboardy@^5.0.2"
   },
   "lint": {
     "rules": {

@@ -6,7 +6,7 @@ import { encodeBase64 } from "jsr:@std/encoding";
 import { algod, getLatestRound, indexer } from "./node.ts";
 import { Pool, PoolTxn, Token } from "./type.ts";
 import { account } from "./account.ts";
-import { copy } from "https://deno.land/x/clipboard@v0.0.3/mod.ts";
+import clipboardy from "clipboardy";
 
 type PoolRecord = {
   pool: number;
@@ -460,6 +460,6 @@ if (import.meta.main) {
     const txnsBase64 = payouts.map((p) => p.txn).join(",");
     Deno.writeTextFileSync("./data/txns.txt", txnsBase64);
     Deno.writeTextFileSync("./data/data.json", distribution.toString());
-    await copy(txnsBase64);
+    await clipboardy.write(txnsBase64);
   }
 }
